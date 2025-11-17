@@ -8,3 +8,7 @@ use Illuminate\Support\Facades\Artisan;
 Artisan::command('momo:status',function (){
     info('Commande momo:status exécutée automatiquement.');
 })->everyMinute();
+
+Artisan::command('app:update-pot',function (){
+    info('Commande momo:status exécutée automatiquement.');
+})->everyMinute();
