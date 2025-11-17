@@ -1,14 +1,9 @@
 <?php
 
-use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 
 
-Artisan::command('momo:status',function (){
-    info('Commande momo:status exécutée automatiquement.');
-})->everyMinute();
-
-Artisan::command('app:update-pot',function (){
-    info('Commande momo:status exécutée automatiquement.');
-})->everyMinute();
+//Schedule::command('momo:status')->everyMinute();
+Schedule::command('app:update-pot')->everyMinute();

@@ -15,7 +15,8 @@ class UpdatePot extends Command
         $pots = Pot::where('status', 'open')->get();
 
         foreach ($pots as $pot) {
-
+            $this->info('Mise à jour des pots terminée.');
+            logger('icicccc');
             // Charger les lignes + fixtures en une requête (optimisation)
             $lines = $pot->footLines()->with('fixture')->get();
 
@@ -58,6 +59,7 @@ class UpdatePot extends Command
             }
         }
 
+        logger('icicccc');
         $this->info('Mise à jour des pots terminée.');
     }
 }
