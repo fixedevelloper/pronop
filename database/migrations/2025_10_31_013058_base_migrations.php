@@ -33,14 +33,12 @@ return new class extends Migration
             $table->string('st_short');
             $table->string('st_elapsed');
             $table->integer('league_id');
-            $table->integer('league_season');
-            $table->string('league_round');
+            $table->integer('league_season')->nullable();
+            $table->string('league_round')->nullable();
             $table->string('team_home_name')->nullable();
             $table->string('team_home_logo')->nullable();
             $table->string('team_away_name')->nullable();
             $table->string('team_away_logo')->nullable();
-            $table->integer('team_home_id');
-            $table->integer('team_away_id');
             $table->boolean('team_away_winner')->default(false);
             $table->boolean('team_home_winner')->default(false);
             $table->integer('goal_home')->nullable();

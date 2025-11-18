@@ -42,5 +42,8 @@ return [
         'api_key' => env('MOMO_API_KEY'),
         'currency' => env('MOMO_CURRENCY'),
     ],
-
+    'football'=>[
+        'base_url'=>env('APIFOOT_KEY_URL'),
+        'token'=>env('APIFOOT_KEY')
+    ]
 ];

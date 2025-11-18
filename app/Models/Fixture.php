@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class Fixture extends Model
 {
     protected $fillable = [
-        'fixture_id', 'referee', 'timezone', 'timestamp', 'date',
+        'fixture_id', 'referee',
+        'timezone', 'timestamp', 'date',
         'st_long', 'st_short', 'st_elapsed', 'league_id',
-        'team_home_id', 'team_away_id',
+        'team_home_logo', 'team_away_logo','day_timestamp',
+        'team_home_name', 'team_away_name',
         'team_away_winner', 'team_home_winner',
         'goal_home', 'goal_away',
         'score_ht_home', 'score_ht_away',

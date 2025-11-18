@@ -3,6 +3,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\FixtureController;
+use App\Http\Controllers\MobileController;
 use App\Http\Controllers\SecurityController;
 
 use App\Http\Controllers\UserController;
@@ -17,9 +18,13 @@ Route::get('/pots', [App\Http\Controllers\PotController::class, 'index']);
 Route::get('/pots/{pot}', [App\Http\Controllers\PotController::class, 'show']);
 Route::get('/fixtures', [FixtureController::class, 'index']);
 Route::get('/pots/{pot}/details', [App\Http\Controllers\PotController::class, 'details']);
+Route::get('/pay/status/{referenceId}', [MobileController::class, 'checkStatus']);
 // routes/api.php
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [SecurityController::class, 'logout']);
+    Route::post('/pay/deposit', [MobileController::class, 'deposit']);
+
+    Route::post('/pay/withdraw', [MobileController::class, 'withdraw']);
     Route::get('/account/transactions', [AccountController::class, 'transactions']);
     Route::get('/account/pronostics', [AccountController::class, 'pronostics']);
     Route::get('/account/pots', [AccountController::class, 'pots']);
