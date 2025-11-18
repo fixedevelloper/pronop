@@ -55,7 +55,7 @@ class UpdateFixture extends Command
         $from = date('Y-m-d');
       //  $to = date('Y-m-d', strtotime($from . ' +1 day'));
        // $dates = [$from, $to];
-
+        $date=$from;
        // foreach ($dates as $date) {
             $data = $this->football->getFixtures($from);
             if (!isset($data['success']) || !$data['success']) {
