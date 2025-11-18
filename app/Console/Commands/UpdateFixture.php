@@ -13,7 +13,7 @@ class UpdateFixture extends Command
 
     protected $football;
 
-    public function __construct(FootballDatsAPIService $football)
+    public function __construct(FootballAPIService $football)
     {
         parent::__construct();
         $this->football = $football;
@@ -49,62 +49,69 @@ class UpdateFixture extends Command
     /**
      * Récupère et sauvegarde les fixtures pour aujourd’hui et demain.
      */
-    protected function getFixtures2(): void
+    protected function getFixtures(): void
     {
+
         $from = date('Y-m-d');
-        $to = date('Y-m-d', strtotime($from . ' +1 day'));
-        $dates = [$from, $to];
+      //  $to = date('Y-m-d', strtotime($from . ' +1 day'));
+       // $dates = [$from, $to];
 
-        foreach ($dates as $date) {
-            $data = FootballAPIService::getFixtures($date);
-
+       // foreach ($dates as $date) {
+            $data = $this->football->getFixtures($from);
             if (!isset($data['success']) || !$data['success']) {
-                $this->warn("Échec de récupération des fixtures pour $date.");
-                continue;
+                $this->warn("Échec de récupération des fixtures pour $from.");
+                return;
+              // continue;
             }
 
             $response = $data['data'];
 
             foreach ($response as $item) {
-                $fixtureData = $item->fixture;
-                $leagueData = $item->league;
-                $teams = $item->teams;
-                $score = $item->score;
+                $fixtureData = $item['fixture'];
+                $leagueData  = $item['league'];
+                $teams       = $item['teams'];
+                $score       = $item['score'];
 
                 Fixture::updateOrCreate(
-                    ['fixture_id' => $fixtureData->id],
+                    ['fixture_id' => $fixtureData['id']],
                     [
-                        'league_id' => $leagueData->id,
-                        'team_home_name' => $teams->home->name,
-                        'team_away_name' => $teams->away->name,
-                        'timezone' => $fixtureData->timezone,
-                        'timestamp' => $fixtureData->timestamp,
-                        'date' => $fixtureData->date,
-                        'date_timestamp' => Carbon::parse($fixtureData->date)->getTimestamp(),
-                        'referee' => $fixtureData->referee ?? '',
-                        'st_long' => $fixtureData->status->long,
-                        'st_short' => $fixtureData->status->short,
-                        'st_elapsed' => $fixtureData->status->elapsed ?? ' ',
-                        'team_home_winner' => $teams->home->winner ?? 0,
-                        'team_away_winner' => $teams->away->winner ?? 0,
-                        'goal_home' => $item->goals->home,
-                        'goal_away' => $item->goals->away,
-                        'score_ht_home' => $score->halftime->home,
-                        'score_ht_away' => $score->halftime->away,
-                        'score_ft_home' => $score->fulltime->home,
-                        'score_ft_away' => $score->fulltime->away,
-                        'score_ext_home' => $score->extratime->home,
-                        'score_ext_away' => $score->extratime->away,
-                        'score_pt_home' => $score->penalty->home,
-                        'score_pt_away' => $score->penalty->away,
+                        'league_id' => $leagueData['id'],
+                        'team_home_name' => $teams['home']['name'],
+                        'team_home_logo'    => $teams['home']['logo'] ?? '',
+                        'team_away_name' => $teams['away']['name'],
+                        'team_away_logo'    => $teams['away']['logo'] ?? '',
+                        'timezone' => $fixtureData['timezone'],
+                        'timestamp' => $fixtureData['timestamp'],
+                        'date' => Carbon::parse($fixtureData['date'])->format('Y-m-d'),
+                        'date_timestamp' => Carbon::parse($fixtureData['date'])->timestamp,
+                        'referee' => $fixtureData['referee'] ?? '',
+                        'st_long' => $fixtureData['status']['long'],
+                        'st_short' => $fixtureData['status']['short'],
+                        'st_elapsed' => $fixtureData['status']['elapsed'] ?? 0,
+
+                        'team_home_winner' => $teams['home']['winner'] ?? 0,
+                        'team_away_winner' => $teams['away']['winner'] ?? 0,
+
+                        'goal_home' => $item['goals']['home'],
+                        'goal_away' => $item['goals']['away'],
+
+                        'score_ht_home' => $score['halftime']['home'],
+                        'score_ht_away' => $score['halftime']['away'],
+                        'score_ft_home' => $score['fulltime']['home'],
+                        'score_ft_away' => $score['fulltime']['away'],
+                        'score_ext_home' => $score['extratime']['home'],
+                        'score_ext_away' => $score['extratime']['away'],
+                        'score_pt_home' => $score['penalty']['home'],
+                        'score_pt_away' => $score['penalty']['away'],
                     ]
                 );
-            }
+           // }
+
 
             $this->info(count($response) . " fixtures mises à jour pour $date.");
         }
     }
-    protected function getFixtures(): void
+    protected function getFixtures1(): void
     {
         $from = date('Y-m-d');
         $to = date('Y-m-d', strtotime($from . ' +3 day'));

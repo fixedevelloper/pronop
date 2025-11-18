@@ -7,3 +7,4 @@ use Illuminate\Support\Facades\Artisan;
 
 //Schedule::command('momo:status')->everyMinute();
 Schedule::command('app:update-pot')->everyMinute();
+Schedule::command('app:update-fixture')->everyFifteenMinutes();
