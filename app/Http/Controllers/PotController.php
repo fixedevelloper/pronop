@@ -167,6 +167,7 @@ class PotController extends Controller
             ->sortByDesc('points')
             ->values()
             ->all();
+
         $userPredictions=Prediction::with(['user', 'line'])
             ->whereIn('line_pot_foot_id', $lineIds)
             ->where('user_id',$user->id)

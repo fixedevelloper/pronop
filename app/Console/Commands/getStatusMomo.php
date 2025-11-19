@@ -2,11 +2,12 @@
 
 namespace App\Console\Commands;
 
-use App\Models\PointSale;
+
+use App\Models\Transaction;
 use App\Service\MomoService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
-use App\Models\Paiement;
 
 class GetStatusMomo extends Command
 {
@@ -23,85 +24,68 @@ class GetStatusMomo extends Command
 
     public function handle(): int
     {
-        $paiements = Paiement::query()->where('status', 'pending')->get();
-        $salePoints=PointSale::query()->where('status', 'pending')->get();
-        if ($paiements->isEmpty() && $salePoints->isEmpty()) {
+        $paiements = Transaction::query()
+            ->where('status', 'pending')
+            ->get();
+
+        if ($paiements->isEmpty()) {
             $this->info('Aucun paiement en attente trouvé.');
             return Command::SUCCESS;
         }
 
         foreach ($paiements as $paiement) {
-            $this->info("Vérification du paiement #{$paiement->id} ({$paiement->reference_id}) ...");
+
+            $this->info("🔍 Vérification paiement #{$paiement->id} ({$paiement->reference_id})");
 
             try {
-                $statusResponse = $this->momo->getPaymentStatus($paiement->reference_id);
-                $status = $statusResponse['status'];
+                // Exemple API
+                // $statusResponse = $this->momo->getPaymentStatus($paiement->reference_id);
+                // $status = $statusResponse['status'];
 
-                $this->line("Statut reçu : {$status}");
-                $this->line("Statut avant update : {$paiement->status}");
+                $status = 'SUCCESSFUL'; // Forcé pour test
 
-                $updateData = [
-                    'status' => match($status){
-                    'SUCCESSFUL' => 'confirmed',
-        'FAILED' => 'failed',
-        default => 'pending',
-    },
-];
+                $this->line("➡️ Statut API : {$status}");
+                $this->line("➡️ Statut actuel : {$paiement->status}");
 
-if ($status === 'SUCCESSFUL') {
-    $updateData['confirmed_at'] = now();
-}
+                // Convertir statut API → statut interne
+                $mappedStatus = match ($status) {
+                'SUCCESSFUL' => 'success',
+                'FAILED'     => 'failed',
+                default      => 'pending'
+            };
 
-$success = $paiement->update($updateData);
+            DB::beginTransaction();
 
-if (!$success) {
-    $this->line("⚠️ Mise à jour échouée");
-}
+            // ⚠️ Important : si déjà crédité, ne pas re-créditer
+            if ($mappedStatus === 'success' && !$paiement->confirmed_at) {
 
-$paiement->refresh();
-$this->line("Statut après update : {$paiement->status}");
+                $this->line("💰 Crédit du solde utilisateur...");
 
-            } catch (\Exception $e) {
-                $this->error("Erreur pour le paiement #{$paiement->id} : " . $e->getMessage());
-                continue;
+                $paiement->user->update([
+                    'wallet_balance' => $paiement->user->wallet_balance + $paiement->amount
+                ]);
             }
-        }
 
+            // Préparer la mise à jour
+            $updateData = ['status' => $mappedStatus];
 
+            if ($mappedStatus === 'success') {
+                $updateData['confirmed_at'] = $paiement->confirmed_at ?? now();
+            }
 
-        foreach ($salePoints as $salePoint) {
-            $this->info("Vérification du paiement #{$salePoint->id} ({$salePoint->referenceId}) ...");
+            $paiement->update($updateData);
 
-            try {
-                $statusResponse = $this->momo->getPaymentStatus($salePoint->referenceId);
-                $status = $statusResponse['status'];
+            DB::commit();
 
-                $this->line("Statut reçu : {$status}");
-                $this->line("Statut avant update : {$salePoint->status}");
+            $paiement->refresh();
 
-                $updateData = [
-                    'status' => match($status){
-                    'SUCCESSFUL' => 'confirmed',
-        'FAILED' => 'failed',
-        default => 'pending',
-    },
-];
+            $this->line("✔️ Nouveau statut : {$paiement->status}");
 
-if ($status === 'SUCCESSFUL') {
-    $updateData['confirmed_at'] = now();
-}
+        } catch (\Exception $e) {
 
-$success = $salePoint->update($updateData);
+                DB::rollBack();
 
-if (!$success) {
-    $this->line("⚠️ Mise à jour échouée");
-}
-
-$salePoint->refresh();
-$this->line("Statut après update : {$salePoint->status}");
-
-            } catch (\Exception $e) {
-                $this->error("Erreur pour le paiement #{$salePoint->id} : " . $e->getMessage());
+                $this->error("❌ Erreur paiement #{$paiement->id} : " . $e->getMessage());
                 continue;
             }
         }
@@ -109,4 +93,6 @@ $this->line("Statut après update : {$salePoint->status}");
         $this->info('✅ Vérification des paiements terminée.');
         return Command::SUCCESS;
     }
+
+
 }

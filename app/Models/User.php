@@ -13,36 +13,9 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable; // ✅ ajoute HasApiTokens ici
 
-    protected $fillable = ['name', 'email', 'password', 'role','phone','address'];
+    protected $fillable = ['name', 'email', 'password', 'role','phone','address','wallet_balance'];
 
     protected $hidden = ['password', 'remember_token'];
-
-    public function properties()
-    {
-        return $this->hasMany(Property::class);
-    }
-
-    public function tenants()
-    {
-        return $this->hasMany(Tenant::class);
-    }
-
-    public function subscriptions()
-    {
-        return $this->hasMany(Subscription::class);
-    }
-
-// Agents reliés à des propriétaires
-    public function owners()
-    {
-        return $this->belongsToMany(User::class, 'agent_owner', 'agent_id', 'owner_id');
-    }
-
-    public function agents()
-    {
-        return $this->belongsToMany(User::class, 'agent_owner', 'owner_id', 'agent_id');
-    }
-
 
 
 }
