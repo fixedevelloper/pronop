@@ -130,7 +130,7 @@ return new class extends Migration
             $table->foreignId('pot_id')->constrained()->cascadeOnDelete();
             $table->string('gateway')->nullable();
             $table->decimal('amount', 10, 2);
-            $table->enum('status', ['pending', 'success', 'failed'])->default('pending');
+            $table->enum('status', ['pending', 'success', 'failed','closed'])->default('pending');
             $table->timestamps();
         });
         Schema::create('transactions', function (Blueprint $table) {

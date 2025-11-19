@@ -18,8 +18,8 @@ class FixtureResource extends JsonResource
             'id'=>$this->id,
             'team_home'=>$this->team_home_name,
             'team_away'=>$this->team_away_name,
-            'score_home'=>$this->goal_home,
-            'score_away'=>$this->goal_away,
+            'score_home'=>$this->score_ft_home,
+            'score_away'=>$this->score_ft_away,
             'team_home_logo'=>$this->team_home_logo,
             'team_away_logo'=>$this->team_away_logo,
         ];

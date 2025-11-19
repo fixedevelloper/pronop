@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Pot;
 use App\Service\PotSettlementService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class UpdatePot extends Command
 {
@@ -26,9 +27,9 @@ class UpdatePot extends Command
     public function handle()
     {
         $pots = Pot::where('status', 'open')->get();
-
+        DB::beginTransaction();
         foreach ($pots as $pot) {
-            $this->info('Mise à jour des pots terminée.');
+
             // Charger les lignes + fixtures en une requête (optimisation)
             $lines = $pot->footLines()->with('fixture')->get();
 
@@ -44,10 +45,11 @@ class UpdatePot extends Command
                 }
 
                 // Le match n'est pas terminé
-                if ($fixture->st_short !== 'FT') {
+                if ($fixture->st_short === 'NS' || $fixture->st_short === 'HT') {
                     continue;
                 }
-
+                $this->info('init pot0');
+                $this->info('init pot');
                 $finishedCount++;
 
                 // Détermination du résultat
@@ -64,13 +66,15 @@ class UpdatePot extends Command
                     $line->update(['result' => $result]);
                 }
             }
-
+            $this->info('closed.'.$pot->id.'fib'.$finishedCount);
             // Si tous les matchs sont terminés → fermer le pot
             if ($finishedCount === $lines->count() && $lines->count() > 0) {
+                $this->info('closed.'.$pot->id);
                 $pot->update(['status' => 'closed']);
                 $this->potSettlementService->settle($pot);
             }
         }
+        DB::commit();
 
         $this->info('Mise à jour des pots terminée.');
     }

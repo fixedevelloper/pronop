@@ -15,6 +15,8 @@ class PotSettlementService
 
     /**
      * Clôturer et distribuer les gains d’un pot
+     * @param Pot $pot
+     * @return mixed
      */
     public function settle(Pot $pot)
     {
@@ -26,13 +28,15 @@ class PotSettlementService
                 ->get();
 
             if ($subs->isEmpty()) {
-                throw new \Exception('Aucun participant dans ce pot');
+                return ;
+                //throw new \Exception('Aucun participant dans ce pot');
             }
 
             // 2️⃣ Récupérer les lignes du pot et leurs résultats
-            $lines = $pot->linesFoot()->get(); // si foot
+            $lines = $pot->footLines()->get(); // si foot
             if ($lines->isEmpty()) {
-                throw new \Exception('Pas de lignes disponibles pour ce pot');
+                return ;
+                //throw new \Exception('Pas de lignes disponibles pour ce pot');
             }
 
             // Map id => result
@@ -100,7 +104,7 @@ class PotSettlementService
             // 8️⃣ Transaction commission
             if ($commission > 0) {
                 Transaction::create([
-                    'user_id' => null,
+                    'user_id' => 1,
                     'pot_id' => $pot->id,
                     'type' => 'commission',
                     'amount' => $commission,
@@ -114,7 +118,7 @@ class PotSettlementService
             $pot->save();
 
             // 10️⃣ Fermer toutes les subscriptions liées
-            SubscriptionPot::where('pot_id', $pot->id)->update(['status' => 'closed']);
+            SubscriptionPot::where('pot_id', $pot->id)->update(['status' => 'success']);
 
             return [
                 'winners' => $winners,

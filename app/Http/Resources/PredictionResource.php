@@ -17,8 +17,8 @@ class PredictionResource extends JsonResource
         return [
             'team_home'=>$this->line->fixture->team_home_name,
             'team_away'=>$this->line->fixture->team_away_name,
-            'score_home'=>$this->line->fixture->goal_home,
-            'score_away'=>$this->line->fixture->goal_away,
+            'score_home'=>$this->line->fixture->score_ft_home,
+            'score_away'=>$this->line->fixture->score_ft_away,
             'team_home_logo'=>$this->line->fixture->team_home_logo,
             'team_away_logo'=>$this->line->fixture->team_away_logo,
             'name'=>$this->line->name,
