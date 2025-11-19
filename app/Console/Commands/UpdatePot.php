@@ -3,12 +3,24 @@
 namespace App\Console\Commands;
 
 use App\Models\Pot;
+use App\Service\PotSettlementService;
 use Illuminate\Console\Command;
 
 class UpdatePot extends Command
 {
     protected $signature = 'app:update-pot';
     protected $description = 'Met à jour les résultats des pots et ferme ceux terminés';
+
+    protected $potSettlementService;
+
+    /**
+     * UpdatePot constructor.
+     * @param $potSettlementService
+     */
+    public function __construct(PotSettlementService $potSettlementService)
+    {
+        $this->potSettlementService = $potSettlementService;
+    }
 
     public function handle()
     {
@@ -55,6 +67,7 @@ class UpdatePot extends Command
             // Si tous les matchs sont terminés → fermer le pot
             if ($finishedCount === $lines->count() && $lines->count() > 0) {
                 $pot->update(['status' => 'closed']);
+                $this->potSettlementService->settle($pot);
             }
         }
 
