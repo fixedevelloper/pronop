@@ -19,6 +19,7 @@ class UpdatePot extends Command
      */
     public function __construct(PotSettlementService $potSettlementService)
     {
+        parent::__construct();
         $this->potSettlementService = $potSettlementService;
     }
 
