@@ -71,7 +71,10 @@ class PredictionAdminEngine
                         'predicted_at' => now(),
                         'source' => 'gemini',
                         'analyse_fixture' => $prediction['analysis'] ?? null,
-                        //'model' => 'gemini-1.5-flash'
+                        'form_teams' => $prediction['form_teams'] ?? null,
+                        'h2h' => $prediction['h2h'] ?? null,
+                        'stat_offensive' => $prediction['stat_offensive'] ?? null,
+                        'stat_defensive' => $prediction['stat_defensive'] ?? null,
                     ]);
 
                     // 6. Save details
