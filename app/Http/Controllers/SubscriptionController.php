@@ -1,10 +1,12 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Http\Resources\PotResource;
 use App\Models\Pot;
 use App\Models\Prediction;
 use App\Models\SubscriptionPot;
 use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +17,7 @@ class SubscriptionController extends Controller
     {
         $request->validate([
             'predictions' => 'required|array',
-            'amount' => 'required|string'
+           // 'amount' => 'required'
         ]);
 
         $user = auth()->user();
@@ -75,6 +77,65 @@ class SubscriptionController extends Controller
         });
 
         return response()->json(['message' => 'Participation enregistrée + paiement effectué.']);
+    }
+    public function potByUser(Request $request)
+    {
+        $perPage = (int) $request->query('per_page', 5);
+
+
+        $query = SubscriptionPot::with(['user', 'pot'])
+            ->where('status', 'open')
+            ->orderByDesc('created_at');
+
+
+        // 🔹 Pagination
+        $pots = $query->paginate($perPage);
+
+        return response()->json([
+            'data' =>  PotResource::collection($pots),
+            'meta' => [
+                'total' => $pots->total(),
+                'per_page' => $pots->perPage(),
+                'current_page' => $pots->currentPage(),
+                'last_page' => $pots->lastPage(),
+            ],
+        ]);
+    }
+    public function potsByAuthenticatedUser(Request $request)
+    {
+        $perPage = (int) $request->query('per_page', 5);
+        $user = auth()->user(); // utilisateur connecté
+        if (!$user) {
+            return response()->json([
+                'error' => 'Unauthorized'
+            ], 401);
+        }
+
+        $perPage = (int) $request->query('per_page', $perPage);
+
+        // Récupère les pots où l'utilisateur a une subscription
+        $query = Pot::whereHas('subscriptions', function ($q) use ($user) {
+            $q->where('user_id', $user->id)
+                ->where('status', 'success');
+        })
+            ->with([
+                'creator:id,name,email',
+                'subscriptions.user:id,name'
+            ])
+            ->orderByDesc('created_at');
+
+
+        $pots = $query->paginate($perPage);
+
+        return response()->json([
+            'data' =>  PotResource::collection($pots),
+            'meta' => [
+                'total' => $pots->total(),
+                'per_page' => $pots->perPage(),
+                'current_page' => $pots->currentPage(),
+                'last_page' => $pots->lastPage(),
+            ],
+        ]);
     }
 
 }

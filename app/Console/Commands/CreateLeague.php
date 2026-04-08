@@ -8,6 +8,15 @@ use Illuminate\Console\Command;
 
 class CreateLeague extends Command
 {
+
+    protected $football;
+
+    public function __construct(FootballAPIService $football)
+    {
+        parent::__construct();
+        $this->football = $football;
+    }
+
     /**
      * The name and signature of the console command.
      *
@@ -32,24 +41,30 @@ class CreateLeague extends Command
 
     }
 
-    function createLeagues()
+    public function createLeagues()
     {
-        $res = FootballAPIService::getLeagues();
-        $data = $res->response;
-        for ($i = 0; $i < sizeof($data); $i++) {
-            logger('****'.$i);
-            $league = League::query()->firstWhere(['league_id' => $data[$i]->league->id]);
-            if (is_null($league)) {
+        $data = $this->football->getLeagues();
+        $response = $data['data'];
+
+        foreach ($response as $item) {
+
+            $leagueData = $item['league'];
+            $countryData = $item['country'];
+
+            $league = League::query()->firstWhere('league_id', $leagueData['id']);
+
+            if (!$league) {
                 $league = new League();
             }
-            $league->name = $data[$i]->league->name;
-            $league->league_id = $data[$i]->league->id;
-            $league->type = $data[$i]->league->type;
-            $league->logo = $data[$i]->league->logo;
-            $league->country_code = $data[$i]->country->code;
+
+            $league->league_id = $leagueData['id'];
+            $league->name = $leagueData['name'];
+            $league->type = $leagueData['type'];
+            $league->logo = $leagueData['logo'];
+            $league->country_code = $countryData['code'] ?? null;
+
             $league->save();
         }
-
     }
 
 

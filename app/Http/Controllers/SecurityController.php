@@ -2,6 +2,8 @@
 
 
 namespace App\Http\Controllers;
+use App\Http\Helpers\Helpers;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
@@ -15,7 +17,6 @@ class SecurityController extends Controller
      */
     public function login(Request $request)
     {
-        logger($request->all());
         $request->validate([
             'phone' => 'required',
             'password' => 'required|string|min:4',
@@ -42,7 +43,7 @@ class SecurityController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->user_type,
+                'role' => $user->role,
                 'balance' => $user->wallet_balance,
                 'phone' => $user->phone,
                 'token' => $token,
@@ -79,11 +80,12 @@ class SecurityController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'user_type' => 'customer',
+            'role' => 'owner',
         ]);
         // 🔹 Génération du token JWT
         $token = $user->createToken('auth_token')->plainTextToken;
-
+        $user->refresh;
+        logger($user);
         // 🔹 Retour JSON avec token
         return response()->json([
             'status' => 'success',
@@ -92,7 +94,7 @@ class SecurityController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->user_role,
+                'role' => $user->role,
                 'token' => $token, // 🔹 Token utilisable côté NextAuth
             ],
         ]);
@@ -115,12 +117,73 @@ class SecurityController extends Controller
 
     /**
      * 🔹 Retourne les infos du user connecté
+     * @param Request $request
+     * @return JsonResponse
      */
     public function profile(Request $request)
     {
         return response()->json([
             'status' => 'success',
             'data' => $request->user(),
+        ]);
+    }
+
+    public function updateProfile(Request $request)
+    {
+
+        $request->validate([
+            'fullName' => 'required|string',
+            'email' => 'required|string',
+            'phone' => 'required|string',
+        ]);
+        $customer = Auth::user();
+
+        if (!$customer) {
+            return Helpers::error('$customer est requis', 400);
+        }
+        $customer->update([
+            'name' => $request->fullName,
+            'email' => $request->email,
+            'phone' => $request->phone,
+        ]);
+
+
+        return Helpers::success([
+            'name' => $customer->name,
+            'phone' => $customer->phone,
+            'email' => $customer->email,
+            'balance' => $customer->sold,
+            'date_birth' => date('Y-m-d')
+        ]);
+    }
+
+    public function changePassword(Request $request)
+    {
+
+        $request->validate([
+            'new_password' => 'required|string',
+            'password' => 'required|string',
+        ]);
+        $customer = Auth::user();
+
+        if (!$customer) {
+            return Helpers::error('$customer est requis', 400);
+        }
+        if (!Auth::attempt(['phone' => $customer->phone, 'password' => $request->password])) {
+            return Helpers::error('Invalid credentials');
+
+        }
+        $customer->update([
+            'password' => Hash::make($request->new_password)
+
+        ]);
+
+        return Helpers::success([
+            'name' => $customer->name,
+            'phone' => $customer->phone,
+            'email' => $customer->email,
+            'balance' => $customer->sold,
+            'date_birth' => date('Y-m-d')
         ]);
     }
 }

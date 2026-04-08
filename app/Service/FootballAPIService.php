@@ -42,6 +42,23 @@ class FootballAPIService
             'data' => $response->json('response') ?? []
         ];
     }
+    public function getLeagues()
+    {
+        $response = $this->get('/leagues');
+
+        if ($response->failed()) {
+            return [
+                'success' => false,
+                'message' => 'Erreur API',
+                'data' => []
+            ];
+        }
+
+        return [
+            'success' => true,
+            'data' => $response->json('response') ?? []
+        ];
+    }
 }
 
 

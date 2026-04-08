@@ -10,11 +10,13 @@ class PredictionResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
+     * @param Request $request
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
         return [
+            'user_id'=>$this->user_id,
             'team_home'=>$this->line->fixture->team_home_name,
             'team_away'=>$this->line->fixture->team_away_name,
             'score_home'=>$this->line->fixture->score_ft_home,

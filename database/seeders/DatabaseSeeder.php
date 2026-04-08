@@ -18,8 +18,6 @@ class DatabaseSeeder extends Seeder
         // 1️⃣ Créer des utilisateurs factices
         $users = User::factory(5)->create();
 
-
-
         $allFixtures = Fixture::all();
 
         // 4️⃣ Créer 10 pots foot

@@ -18,7 +18,10 @@ class Pot extends Model
     ];
 
     protected $appends = ['participants'];
-
+    public function creator()
+    {
+        return $this->belongsTo(User::class,'createdBy');
+    }
     public function footLines()
     {
         return $this->hasMany(LinePotFoot::class, 'pot_id');

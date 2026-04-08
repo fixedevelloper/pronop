@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('type')->nullable();
             $table->string('logo')->nullable();
+            $table->string('country_code')->nullable();
             $table->timestamps();
         });
 
@@ -56,25 +57,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // PMU COURSES
-        Schema::create('courses', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('reunion')->nullable();
-            $table->string('date_course');
-            $table->timestamps();
-        });
-
-        // PMU Participants
-        Schema::create('partant_courses', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
-            $table->enum('status', ['1v', '2v', 'x'])->default('x');
-            $table->timestamps();
-        });
-
-        // POTS (FOOT OU PMU)
+        // POTS (FOOT)
         Schema::create('pots', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -82,7 +65,7 @@ return new class extends Migration
             $table->decimal('entry_fee', 12, 2)->nullable();
             $table->decimal('total_amount', 12, 2)->nullable();
 
-            $table->enum('type', ['foot', 'pmu']);
+            $table->enum('type', ['foot', 'others']);
 
             $table->enum('status', ['open', 'closed', 'settled'])->default('open');
 
@@ -104,15 +87,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Line pot PMU
-        Schema::create('line_pot_pmu', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->foreignId('pot_id')->constrained('pots')->cascadeOnDelete();
-            $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
-            $table->enum('status', ['1v', '2v', 'x'])->default('x');
-            $table->timestamps();
-        });
 
         // PREDICTIONS (FOOT)
         Schema::create('predictions', function (Blueprint $table) {
@@ -145,7 +119,87 @@ return new class extends Migration
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
+        $this->iATable();
 
+    }
+    private function iATable(){
+        Schema::create('ai_predictions', function (Blueprint $table) {
+            $table->id();
+
+            $table->foreignId('fixture_id')->constrained()->cascadeOnDelete();
+            $table->unique('fixture_id');
+            $table->string('source')->default('gemini');
+            $table->string('match_name');
+
+            $table->string('score_exact')->nullable();
+            $table->decimal('confidence', 5, 2)->nullable();
+
+            $table->json('raw_response')->nullable();
+
+            $table->timestamp('predicted_at')->index();
+
+            $table->timestamps();
+        });
+        Schema::create('ai_prediction_details', function (Blueprint $table) {
+            $table->id();
+
+            $table->foreignId('ai_prediction_id')->constrained()->cascadeOnDelete();
+
+            // Probabilités
+            $table->decimal('home_win_prob', 5, 2)->nullable();
+            $table->decimal('draw_prob', 5, 2)->nullable();
+            $table->decimal('away_win_prob', 5, 2)->nullable();
+
+            // Over/Under
+            $table->decimal('over_1_5', 5, 2)->nullable();
+            $table->decimal('over_2_5', 5, 2)->nullable();
+            $table->decimal('over_3_5', 5, 2)->nullable();
+            $table->decimal('under_2_5', 5, 2)->nullable();
+
+            // BTTS
+            $table->decimal('btts_yes', 5, 2)->nullable();
+            $table->decimal('btts_no', 5, 2)->nullable();
+
+            // Odds
+            $table->decimal('odds_home', 6, 2)->nullable();
+            $table->decimal('odds_draw', 6, 2)->nullable();
+            $table->decimal('odds_away', 6, 2)->nullable();
+
+            $table->decimal('odds_over_2_5', 6, 2)->nullable();
+            $table->decimal('odds_under_2_5', 6, 2)->nullable();
+
+            $table->json('best_bets')->nullable();
+
+            $table->timestamps();
+        });
+        Schema::create('ai_prediction_stats', function (Blueprint $table) {
+            $table->id();
+
+            $table->foreignId('ai_prediction_id')->constrained()->cascadeOnDelete();
+
+            $table->string('real_score')->nullable();
+
+            $table->boolean('is_score_correct')->default(false);
+            $table->boolean('is_1x2_correct')->default(false);
+            $table->boolean('is_over25_correct')->default(false);
+            $table->boolean('is_btts_correct')->default(false);
+
+            $table->decimal('accuracy_score', 5, 2)->nullable();
+
+            $table->timestamps();
+        });
+        Schema::create('ai_prediction_logs', function (Blueprint $table) {
+            $table->id();
+
+            $table->text('prompt');
+            $table->longText('response');
+
+            $table->integer('tokens_input')->nullable();
+            $table->integer('tokens_output')->nullable();
+            $table->decimal('cost', 10, 6)->nullable();
+
+            $table->timestamps();
+        });
     }
 
 

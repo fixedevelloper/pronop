@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Helpers\Helpers;
 use App\Http\Resources\LinePotFootResource;
 use App\Http\Resources\PotResource;
 use App\Http\Resources\PredictionResource;
@@ -10,6 +11,7 @@ use App\Models\Pot;
 use App\Http\Controllers\Controller;
 use App\Models\Prediction;
 use App\Service\PotRankingService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,15 +20,15 @@ class PotController extends Controller
 {
     public function createPotFoot(Request $request)
     {
-        $user=Auth::user();
+        $user = Auth::user();
+
         // 🔹 Validation
         $request->validate([
-            'name'       => 'required|string|max:255',
-            'entry_fee'  => 'required|numeric|min:100',
-            'fixtures'   => 'required|array|min:1',
-
+            'name'      => 'required|string|max:255',
+            'entry_fee' => 'required|numeric|min:100',
+            'fixtures'  => 'required|array|min:1',
         ]);
-
+        DB::beginTransaction();
         // 🔹 Création du pot
         $pot = Pot::create([
             'name'              => $request->name,
@@ -35,64 +37,71 @@ class PotController extends Controller
             'type'              => 'foot',
             'status'            => 'open',
             'createdBy'         => $user->id,
+            'start_time'=> now(),
             'distribution_rule' => 'winner_takes_all',
         ]);
 
+        // 🔹 Créer toutes les lignes en une seule requête
         if (!empty($request->fixtures)) {
-            $lines = [];
-            foreach ($request->fixtures as $fixture) {
-                $lines[] = [
-                    'fixture_id' => $fixture,
-                    'pot_id'     => $pot->id,
-                    'name'       => '',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-                LinePotFoot::create([
-                    'fixture_id' => $fixture,
-                    'pot_id'     => $pot->id,
-                    'name'       => '',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-           // LinePotFoot::insert($lines);
+            $lines = collect($request->fixtures)->map(fn($fixtureId) => [
+                'fixture_id' => $fixtureId,
+                'pot_id'     => $pot->id,
+                'name'       => '',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ])->toArray();
+
+            LinePotFoot::insert($lines);
         }
 
+        $endTime = $this->getLastPlayedMatchTimestamp($pot);
+        if ($endTime) {
+            $potEndTime = Carbon::parse($endTime)->subMinutes(30);
+            $pot->update(['end_time' => $potEndTime]);
 
-        // 🔹 Retourner la réponse
+            logger('Pot end_time updated', [
+                'pot_id' => $pot->id,
+                'end_time' => $potEndTime->toDateTimeString()
+            ]);
+        }
+        DB::commit();
+        // 🔹 Charger les relations et retourner la réponse
+        $pot->load('footLines');
+
         return response()->json([
             'success' => true,
             'message' => 'Pot créé avec succès',
-            'pot'     => $pot->load('footLines'), // charger les fixtures si relation définie
+            'pot'     => $pot,
         ]);
     }
     public function index(Request $request)
     {
-        // 🔹 Pagination dynamique (par défaut 20)
-        $perPage = $request->query('per_page', 5);
+        $perPage = (int) $request->query('per_page', 5);
 
-        // 🔹 Récupération des pots ouverts
-        $pots = Pot::where('status', 'open')
-            ->orderBy('start_time', 'desc')
-            ->paginate($perPage);
+        // 🔹 Récupérer le paramètre created_at ou utiliser aujourd'hui
+        $createdAt = $request->query('created_at', Carbon::today()->toDateString()); // format 'YYYY-MM-DD'
 
-        // 🔹 Transformation des données si besoin (facultatif)
-        $pots->getCollection()->transform(function ($pot) {
-            return [
-                'id' => $pot->id,
-                'name' => $pot->name,
-                'entry_fee' => $pot->entry_fee,
-                'total_amount' => $pot->total_amount,
-                'type' => $pot->type,
-                'status' => $pot->status,
-                'start_time' => $pot->start_time,
-                'end_time' => $pot->end_time,
-                'distribution_rule' => $pot->distribution_rule,
-            ];
-        });
+        $query = Pot::with(['subscriptions.user', 'footLines.fixture'])
+            ->where('status', 'open')
+            ->orderByDesc('start_time');
 
-        return response()->json($pots);
+        // 🔹 Filtrer par date
+        if ($createdAt) {
+            $query->whereDate('created_at', $createdAt);
+        }
+
+        // 🔹 Pagination
+        $pots = $query->paginate($perPage);
+
+        return response()->json([
+            'data' =>  PotResource::collection($pots),
+            'meta' => [
+                'total' => $pots->total(),
+                'per_page' => $pots->perPage(),
+                'current_page' => $pots->currentPage(),
+                'last_page' => $pots->lastPage(),
+            ],
+        ]);
     }
 
     public function pronostics(Request $request)
@@ -135,9 +144,10 @@ class PotController extends Controller
             }
         ]);
 
-        return response()->json([
+      /*  return response()->json([
             'pot' => $pot,
-        ]);
+        ]);*/
+        return Helpers::success(new PotResource($pot));
     }
 
     public function leaderboard(Pot $pot)
@@ -179,6 +189,15 @@ class PotController extends Controller
     }
     public function details(Pot $pot)
     {
+        logger($this->getLastPlayedMatchTimestamp($pot));
+        $pot->load([
+            'footLines' => function ($query) {
+                $query->with(['fixture.league']);
+            },
+            'subscriptions' => function ($query) {
+                $query->with('user');
+            }
+        ]);
         $lineIds = $pot->footLines()->pluck('id');
 
         $predictions = Prediction::with(['user', 'line'])
@@ -201,16 +220,15 @@ class PotController extends Controller
             ->values()
             ->all();
 
-        return response()->json([
-            'pot'          => new PotResource($pot),
-            'leaderboards' => $leaderboard,
-            'lines'        => LinePotFootResource::collection($pot->footLines)
-        ]);
+        return Helpers::success(
+            [
+                'pot'          => new PotResource($pot),
+                'leaderboards' => $leaderboard,
+                'predictions'=>PredictionResource::collection($predictions)
+            ]
+        );
+
     }
-
-
-
-
 
     public function ranking($potId, PotRankingService $rankingService)
     {
@@ -218,5 +236,12 @@ class PotController extends Controller
         $ranking = $rankingService->getRanking($pot);
         return response()->json($ranking);
     }
-
+    private function getLastPlayedMatchTimestamp(Pot $pot)
+    {
+        $timestamp= LinePotFoot::where('pot_id', $pot->id)
+            ->join('fixtures', 'line_pot_foot.fixture_id', '=', 'fixtures.id')
+            ->orderBy('fixtures.timestamp', 'desc')
+            ->value('fixtures.timestamp');
+        return $timestamp ? Carbon::createFromTimestamp($timestamp) : null;
+    }
 }
