@@ -24,11 +24,11 @@ class FixtureResource extends JsonResource
                 'logo' => $this->team_home_logo,
                 'winner' => (bool) $this->team_home_winner,
                 'goals' => [
-                    'total' => $this->goal_home,
-                    'ht' => $this->score_ht_home,
-                    'ft' => $this->score_ft_home,
-                    'et' => $this->score_ext_home,
-                    'pt' => $this->score_pt_home,
+                    'total' => (int) $this->goal_away,
+                    'ht'    => (int) $this->score_ht_away,
+                    'ft'    => (int) $this->score_ft_away,
+                    'et'    => (int) $this->score_ext_away,
+                    'pt'    => (int) $this->score_pt_away,
                 ],
             ],
             'away_team' => [
@@ -36,11 +36,11 @@ class FixtureResource extends JsonResource
                 'logo' => $this->team_away_logo,
                 'winner' => (bool) $this->team_away_winner,
                 'goals' => [
-                    'total' => $this->goal_away,
-                    'ht' => $this->score_ht_away,
-                    'ft' => $this->score_ft_away,
-                    'et' => $this->score_ext_away,
-                    'pt' => $this->score_pt_away,
+                    'total' => (int) $this->goal_away,
+                    'ht'    => (int) $this->score_ht_away,
+                    'ft'    => (int) $this->score_ft_away,
+                    'et'    => (int) $this->score_ext_away,
+                    'pt'    => (int) $this->score_pt_away,
                 ],
             ],
 
