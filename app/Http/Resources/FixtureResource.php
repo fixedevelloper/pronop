@@ -77,7 +77,7 @@ class FixtureResource extends JsonResource
             }),
 
             // Métadonnées
-            'day_timestamp' => $this->day_timestamp,
+            'day_timestamp' => $this->timestamp,
             'created_at' => $this->created_at->toISOString(),
             'updated_at' => $this->updated_at->toISOString(),
         ];
