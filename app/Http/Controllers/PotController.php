@@ -242,6 +242,6 @@ class PotController extends Controller
             ->join('fixtures', 'line_pot_foot.fixture_id', '=', 'fixtures.id')
             ->orderBy('fixtures.timestamp', 'desc')
             ->value('fixtures.timestamp');
-        return $timestamp ? Carbon::createFromTimestamp($timestamp) : null;
+        return $timestamp;
     }
 }
