@@ -21,7 +21,7 @@ class PaymentController extends Controller
 
     public function success(IaTransaction $order)
     {
-        $order->payment->update([
+        $order->update([
             'status' => 'success'
         ]);
 
@@ -30,7 +30,7 @@ class PaymentController extends Controller
 
     public function cancel(IaTransaction $order)
     {
-        $order->payment->update([
+        $order->update([
             'status' => 'failed'
         ]);
         return view('payment.cancel');

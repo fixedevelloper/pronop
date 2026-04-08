@@ -144,10 +144,10 @@ class PotController extends Controller
             }
         ]);
 
-      /*  return response()->json([
+       return response()->json([
             'pot' => $pot,
-        ]);*/
-        return Helpers::success(new PotResource($pot));
+        ]);
+       // return Helpers::success(new PotResource($pot));
     }
 
     public function leaderboard(Pot $pot)

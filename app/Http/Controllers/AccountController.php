@@ -256,6 +256,7 @@ class AccountController extends Controller
             ]);
         }
     }
+
     public function me(Request $request)
     {
         $user = Auth::user();
